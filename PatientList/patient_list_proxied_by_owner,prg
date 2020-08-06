@@ -1,0 +1,52 @@
+select OWNER=prown.name_full_formatted
+     , PROXY=prprox.name_full_formatted
+     , dpl.name
+     , list_type =UAR_GET_CODE_DISPLAY(dpl.patient_list_type_cd)
+  ;   , dca.argument_name
+  ;   , dca.argument_value
+  ;   , dca.*
+  ;   , dpc.person_id
+     , PATIENT= p.name_full_formatted
+     , MRN = pa.alias ;dpc.person_id
+     , CSN=ea.alias ;dpc.encntr_id
+     , dpc.updt_dt_tm
+     , UPDTAED_BY= prupd.name_full_formatted ;dpc.updt_id
+from  prsnl prprox
+, (inner join dcp_pl_reltn dpr
+            on dpr.prsnl_id = prprox.person_id)
+, (inner join dcp_patient_list dpl
+          on  dpl.patient_list_id = dpr.patient_list_id)
+, (inner join dcp_pl_argument dca
+           on dca.patient_list_id = dpl.patient_list_id)
+, (inner join prsnl prown
+           on prown.person_id = dpl.owner_prsnl_id)
+, (left  join dcp_pl_custom_entry dpc
+              on dpc.patient_list_id = dpl.patient_list_id) ;;
+, (inner join encounter e
+             on e.encntr_id = dpc.encntr_id)
+  , (inner join encntr_alias ea
+             on ea.encntr_id = e.encntr_id
+            and ea.active_ind = 1
+            and ea.end_effective_dt_tm > sysdate
+            and ea.encntr_alias_type_cd in (select code_value
+                                              from code_value
+                                             where code_set = 319
+                                               and cdf_meaning = 'FIN NBR'))
+  , (inner join person p
+             on p.person_id = e.person_id)
+  , (inner join person_alias pa
+             on pa.person_id = p.person_id
+            and pa.active_ind = 1
+            and pa.end_effective_dt_tm > sysdate)
+  , (inner join code_value person_alias
+             on person_alias.code_value = pa.alias_pool_cd
+            and person_alias.display = 'CHB_MRN' ;; 3110551
+            and person_alias.active_ind = 1)
+ , (inner join prsnl prupd
+           on prupd.person_id = dpc.updt_id)
+where dpr.prsnl_id =  5280694;
+and dpl.name in ('Heart Failure','Blume PP','Heart Transplant')
+and dca.argument_name = 'prsnl_id'
+order by dpl.name asc,dpc.updt_dt_tm desc
+with maxrec=1000,maxtime=300
+go
