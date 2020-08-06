@@ -1,4 +1,6 @@
 /* Query all prefs that mention "static_content */
+/* Author: Jowell Sabino */
+/*                       */
 /* We also want to capture new-gen mpages that query dm_info */
 select cv.display AS position
      , a.description AS APPLICATION
